@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Anoma Word Puzzle</title>
+<style>
+  body {
+    background-color: #0c0c0c;
+    color: #ffffff;
+    font-family: 'Segoe UI', sans-serif;
+    text-align: center;
+    padding: 2rem;
+  }
+  h1 {
+    color: #FF4A4A;
+  }
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(10, 2.2em);
+    gap: 0.3em;
+    justify-content: center;
+    margin-top: 2em;
+  }
+  .cell {
+    width: 2.2em;
+    height: 2.2em;
+    border: 1px solid #777777;
+    background-color: #1a1a1a;
+    color: #ffffff;
+    font-size: 1.2em;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+  .cell.selected {
+    background-color: #FF4A4A;
+    color: #fff;
+    box-shadow: 0 0 6px #ff4a4a80;
+  }
+  .cell:hover {
+    box-shadow: 0 0 4px #ff4a4a50;
+  }
+  #words {
+    margin-top: 1.5rem;
+    font-size: 1em;
+    color: #cccccc;
+  }
+  button {
+    margin-top: 2rem;
+    padding: 0.6em 1.2em;
+    background-color: #FF4A4A;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  button:hover {
+    background-color: #fff;
+    color: #0c0c0c;
+  }
+
+  #resultPopup {
+  display: none;
+  position: fixed;
+  z-index: 999;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1a1a1a;
+  border: 2px solid #FF4A4A;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  max-width: 300px;
+  box-shadow: 0 0 20px rgba(255, 74, 74, 0.5);
+}
+
+#resultPopup h2 {
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+#resultPopup button {
+  margin-top: 1rem;
+}
+
+</style>
+
+
+</head>
+<body>
+  <link rel="icon" href="anoma-logo.png" type="image/png">
+<img src="anoma-logo.png" alt="Anoma Logo" style="width: 60px; margin-bottom: 1rem;">
+  <h1>Anoma Word Puzzle</h1>
+  <p>Find all the hidden Anoma-themed words!</p>
+  <div id="grid"></div>
+  <div id="words">
+    <strong>Words:</strong> anoma, namada, privacy, intent, barter, zkproof, shielded, wasm
+  </div>
+  <button onclick="checkPuzzle()">Check</button>
+  <audio id="welcomeSound" src="welcome.mp3" preload="auto" loop></audio>
+
+ <script>
+  const size = 10;
+  let words = [];
+  const allWords = [
+    "anoma", "namada", "intent", "barter", "privacy", "zkproof", "shielded", "wasm",
+    "zero", "trustless", "rollup", "intentshard", "dapp", "composable", "fractal", "cryptography",
+    "proof", "node", "validator", "consensus", "layer1", "modularity", "governance", "snark",
+    "air", "gasless", "settlement", "state", "mesh", "sovereign", "decentralized"
+  ];
+
+  let gridDiv, selectedCells = [];
+
+  function shuffleArray(arr) {
+    return arr.sort(() => Math.random() - 0.5);
+  }
+
+  function generateWords() {
+    return shuffleArray(allWords).slice(0, 8);
+  }
+
+  function generateGrid() {
+    const grid = Array.from({ length: size }, () => Array(size).fill(''));
+    const directions = [
+      [0, 1], [1, 0], [1, 1], [-1, 1]
+    ];
+
+    function getRandomLetter() {
+      const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      return letters[Math.floor(Math.random() * letters.length)];
+    }
+
+    function placeWord(word) {
+      const maxTries = 100;
+      let placed = false, attempts = 0;
+
+      while (!placed && attempts < maxTries) {
+        attempts++;
+        const dir = directions[Math.floor(Math.random() * directions.length)];
+        const row = Math.floor(Math.random() * size);
+        const col = Math.floor(Math.random() * size);
+        let canPlace = true;
+
+        for (let i = 0; i < word.length; i++) {
+          const r = row + i * dir[0];
+          const c = col + i * dir[1];
+          if (r >= size || c >= size || r < 0 || c < 0 || (grid[r][c] && grid[r][c] !== word[i].toUpperCase())) {
+            canPlace = false;
+            break;
+          }
+        }
+
+        if (canPlace) {
+          for (let i = 0; i < word.length; i++) {
+            const r = row + i * dir[0];
+            const c = col + i * dir[1];
+            grid[r][c] = word[i].toUpperCase();
+          }
+          placed = true;
+        }
+      }
+    }
+
+    // Place all selected words
+    words = generateWords();
+    words.forEach(placeWord);
+
+    // Fill empty cells
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (!grid[r][c]) grid[r][c] = getRandomLetter();
+      }
+    }
+
+    return grid;
+  }
+
+  function renderGrid(grid) {
+    gridDiv.innerHTML = '';
+    selectedCells = [];
+
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.textContent = grid[r][c];
+        cell.dataset.row = r;
+        cell.dataset.col = c;
+
+        cell.addEventListener('click', () => {
+          cell.classList.toggle('selected');
+          const key = `${r}-${c}`;
+          if (selectedCells.includes(key)) {
+            selectedCells = selectedCells.filter(k => k !== key);
+          } else {
+            selectedCells.push(key);
+          }
+        });
+
+        gridDiv.appendChild(cell);
+      }
+    }
+
+    // Update words list
+    document.getElementById('words').innerHTML = `<strong>Words:</strong> ${words.join(', ')}`;
+  }
+
+ function checkPuzzle() {
+  const selectedElements = document.querySelectorAll('.cell.selected');
+  const selectedLetters = Array.from(selectedElements).map(cell => cell.textContent).join('');
+  const reversed = selectedLetters.split('').reverse().join('');
+  const allWordsFound = words.every(word =>
+    selectedLetters.includes(word.toUpperCase()) || reversed.includes(word.toUpperCase())
+  );
+
+  const popup = document.createElement('div');
+  popup.id = 'resultPopup';
+  popup.innerHTML = `
+    <h2 style="color: ${allWordsFound ? '#4CAF50' : '#FF4A4A'};">
+      ${allWordsFound ? '🎉 Congrats! You solved the puzzle.' : '❌ You failed the puzzle. Try again!'}
+    </h2>
+    <p style="margin: 0.5rem 0;">🎮 Game created by <strong>ApexV</strong>. <a href="https://x.com/Ap3xV_" target="_blank" style="color: #FF4A4A;">Follow on X</a></p>
+    <img src="apexv-profile.jpg" alt="ApexV" style="width: 60px; border-radius: 50%; margin: 0.5rem 0;" />
+    <br>
+    <button onclick="closePopupAndRestart()">Play Again</button>
+  `;
+  document.body.appendChild(popup);
+  popup.style.display = 'block';
+}
+
+function closePopupAndRestart() {
+  const popup = document.getElementById('resultPopup');
+  if (popup) popup.remove();
+
+  // Clear any selected cells
+  selectedCells = [];
+
+  // Reset grid
+  initPuzzle();
+}
+
+
+  function initPuzzle() {
+    const grid = generateGrid();
+    renderGrid(grid);
+  }
+
+  window.onload = function () {
+    gridDiv = document.getElementById('grid');
+    initPuzzle();
+  };
+
+  // Sound on first click
+  let soundPlayed = false;
+  document.body.addEventListener('click', () => {
+    if (!soundPlayed) {
+      const audio = document.getElementById('welcomeSound');
+      audio.volume = 0.4;
+      audio.play().catch(err => console.log("Autoplay blocked:", err));
+      soundPlayed = true;
+    }
+  });
+</script>
+
+</body>
+</html>
