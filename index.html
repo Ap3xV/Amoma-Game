@@ -203,15 +203,55 @@
         cell.dataset.row = r;
         cell.dataset.col = c;
 
-        cell.addEventListener('click', () => {
-          cell.classList.toggle('selected');
-          const key = `${r}-${c}`;
-          if (selectedCells.includes(key)) {
-            selectedCells = selectedCells.filter(k => k !== key);
-          } else {
-            selectedCells.push(key);
-          }
-        });
+   cell.addEventListener('click', () => {
+  const key = `${r}-${c}`;
+
+  // Skip if already found
+  // Allow selecting found cells, but don't change their state
+
+
+  if (selectedCells.includes(key)) {
+    cell.classList.remove('selected');
+    selectedCells = selectedCells.filter(k => k !== key);
+  } else {
+    cell.classList.add('selected');
+    selectedCells.push(key);
+  }
+
+  // After every click, check for word match
+  const selectedElements = selectedCells.map(k => {
+    const [row, col] = k.split('-').map(Number);
+    return document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+  });
+
+  const selectedWord = selectedElements.map(el => el.textContent).join('');
+  const reversed = selectedWord.split('').reverse().join('');
+
+  const matchIndex = words.findIndex(w => 
+    w.toUpperCase() === selectedWord || w.toUpperCase() === reversed
+  );
+
+  if (matchIndex !== -1) {
+    // Word found! Mark cells and remove from list
+    selectedElements.forEach(el => {
+      el.classList.remove('selected');
+      el.classList.add('found');
+    });
+
+    // Remove word from words list and update display
+    words.splice(matchIndex, 1);
+    document.getElementById('words').innerHTML = `<strong>Words:</strong> ${words.join(', ')}`;
+
+    // Reset current selection
+    selectedCells = [];
+
+    // Auto-check puzzle completion
+    if (words.length === 0) {
+      setTimeout(() => checkPuzzle(), 300);
+    }
+  }
+});
+
 
         gridDiv.appendChild(cell);
       }
