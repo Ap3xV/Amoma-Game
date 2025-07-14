@@ -151,10 +151,13 @@
         for (let i = 0; i < word.length; i++) {
           const r = row + i * dir[0];
           const c = col + i * dir[1];
-          if (r >= size || c >= size || r < 0 || c < 0 || (grid[r][c] && grid[r][c] !== word[i].toUpperCase())) {
-            canPlace = false;
-            break;
-          }
+      if (
+  r >= size || c >= size || r < 0 || c < 0 ||
+  (grid[r][c] && grid[r][c] !== word[i].toUpperCase())
+) {
+  canPlace = false;
+  break;
+}
         }
 
         if (canPlace) {
