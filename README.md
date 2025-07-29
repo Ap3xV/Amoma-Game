@@ -1,6 +1,6 @@
 ## About This Project
 
-This game was created as a community contribution to the Anoma ecosystem. It’s designed to help users understand [core concept, e.g. intents, privacy, etc.].
+This puzzle game was created before Anoma’s testnet launched to explain key concepts and for users to have fun. Sharing now to contribute to the community and preserve early creative efforts.
 
 Inspired by: [https://github.com/anoma/anoma](https://github.com/anoma/anoma)
 
